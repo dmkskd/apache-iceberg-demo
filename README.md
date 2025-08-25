@@ -12,8 +12,8 @@ This project demonstrates Apache Iceberg's core features through two different d
 1. **Clone and setup:**
 
    ```bash
-   git clone <repository-url>
-   cd my-iceberg-test
+   git clone https://github.com/dmkskd/apache-iceberg-demo
+   cd apache-iceberg-demo
    ```
 
 2. **Install dependencies:**
