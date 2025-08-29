@@ -25,6 +25,44 @@ from pyiceberg.io import load_file_io
 import fastavro
 from pyiceberg import expressions
 import json
+import sys
+
+# Platform-specific single-character input
+if sys.platform == "win32":
+    try:
+        import msvcrt
+        def _getch():
+            return msvcrt.getch().decode('utf-8')
+    except ImportError:
+        print("Warning: msvcrt not available. Falling back to basic input.")
+        def _getch():
+            return sys.stdin.read(1)
+
+elif sys.platform == "darwin" or sys.platform.startswith("linux"):
+    try:
+        import termios
+        import tty
+        def _getch():
+            fd = sys.stdin.fileno()
+            old_settings = termios.tcgetattr(fd)
+            try:
+                tty.setraw(fd)
+                ch = sys.stdin.read(1)
+                # Handle arrow keys (multi-byte sequences)
+                if ch == '\x1b':  # ESC
+                    ch += sys.stdin.read(2) # Read the next two characters
+            finally:
+                termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+            return ch
+    except ImportError:
+        print("Warning: termios or tty not available. Falling back to basic input.")
+        def _getch():
+            return sys.stdin.read(1)
+else:
+    # Fallback for other platforms
+    def _getch():
+        print("\nWarning: Single-character input not supported on this platform. Press Enter to continue.")
+        return sys.stdin.read(1)
 
 def interactive_prompt(step_number, title, description, about_to_do):
     """Interactive prompt to explain and confirm each step"""
@@ -45,7 +83,6 @@ def interactive_prompt(step_number, title, description, about_to_do):
 
 
 
-
 def cleanup_warehouse():
     """Clean up the warehouse directory"""
     warehouse_path = "local_warehouse"
@@ -55,7 +92,6 @@ def cleanup_warehouse():
 
 def setup_iceberg_environment():
     """Set up the Iceberg catalog and create initial table"""
-    
     interactive_prompt(
         1, 
         "ICEBERG ENVIRONMENT SETUP",
@@ -89,7 +125,6 @@ def setup_iceberg_environment():
 
 def insert_initial_data(table):
     """Insert initial data (V1)"""
-    
     interactive_prompt(
         2, 
         "INITIAL DATA INSERT (V1)",
@@ -119,7 +154,6 @@ def insert_initial_data(table):
 
 def perform_upsert_operation(table):
     """Perform upsert operation (V2)"""
-    
     interactive_prompt(
         3, 
         "UPSERT OPERATION (V2)",
@@ -149,7 +183,6 @@ def perform_upsert_operation(table):
 
 def perform_delete_operation(table):
     """Perform delete operation (V3)"""
-    
     interactive_prompt(
         4, 
         "DELETE OPERATION (V3)",
@@ -183,7 +216,7 @@ def perform_schema_evolution(table):
     # Add a new column
     table.update_schema().add_column("email", StringType()).commit()
     print("\n✅ Schema evolved: 'email' column added.")
-    print("📊 New schema:")
+    print(f"📊 New schema:")
     print(table.schema())
 
     # Insert new data with the new column
@@ -202,8 +235,8 @@ def perform_schema_evolution(table):
     pa_table_v4 = pa.Table.from_pandas(df_v4, schema=table.schema().as_arrow(), preserve_index=False)
     table.append(pa_table_v4)
     snapshot_id_v4 = table.current_snapshot().snapshot_id
-    print(f"\n✅ V4 Data inserted successfully with new schema!")
-    print(f"✅ Snapshot ID: {snapshot_id_v4}")
+    print(f"\n✅ V4 Data inserted successfully!\033[0m")
+    print(f"✅ Snapshot ID: {snapshot_id_v4}\033[0m")
     print(f"✅ Records: {len(table.scan().to_pandas())}")
     final_df = table.scan().to_pandas()
     print("\n📊 Final data after schema evolution:")
@@ -216,19 +249,50 @@ _max_lines_per_page = 25 # Adjust as needed
 def paginated_print(text, reset=False):
     """Prints text and pauses if output exceeds screen height."""
     global _current_line_count
+    global _max_lines_per_page # This will be the "page" size for spacebar
+
     if reset:
         _current_line_count = 0
 
     lines = text.splitlines()
-    for line in lines:
-        print(line)
-        _current_line_count += 1
-        if _current_line_count >= _max_lines_per_page:
-            user_input = input("\033[1m\033[92m--- Press ENTER to continue viewing output for this step (or 'q' to quit) ---\033[0m").strip().lower()
-            if user_input == 'q':
-                print("Exiting demonstration.")
-                exit()
-            _current_line_count = 0
+    line_index = 0
+    while line_index < len(lines):
+        # Print lines until page is full or end of text
+        lines_to_print_this_turn = 0
+        while line_index < len(lines) and lines_to_print_this_turn < _max_lines_per_page:
+            print(lines[line_index])
+            line_index += 1
+            lines_to_print_this_turn += 1
+
+        # If there are more lines, pause and wait for input
+        if line_index < len(lines):
+            print("\033[1m\033[92m--- Press SPACE for next page, DOWN ARROW for next line, or 'q' to quit ---\033[0m", end='', flush=True)
+            while True:
+                try:
+                    key = _getch()
+                except KeyboardInterrupt:
+                    print("\nExiting demonstration.")
+                    exit()
+
+                if key == 'q':
+                    print("\nExiting demonstration.")
+                    exit()
+                elif key == ' ':
+                    print("\r" + " " * 80 + "\r", end='', flush=True) # Clear prompt
+                    break # Exit inner loop, continue outer loop to print next page
+                elif key == '\x1b[B':  # Arrow Down key for next line
+                    print("\r" + " " * 80 + "\r", end='', flush=True) # Clear prompt
+                    # Print just one more line and then re-enter the prompt loop
+                    if line_index < len(lines):
+                        print(lines[line_index], end='') # Print line without its own newline
+                        line_index += 1
+                        print() # Add a newline after the line
+                    if line_index >= len(lines): # If that was the last line, break out
+                        break
+                    # If not last line, stay in inner loop to wait for next key press
+                    print("\033[1m\033[92m--- Press SPACE for next page, DOWN ARROW for next line, or 'q' to quit ---", end='', flush=True)
+                # Optionally handle other keys if needed, or just ignore
+
 
 
 def _link(url, text):
@@ -237,93 +301,95 @@ def _link(url, text):
 
 
 def analyze_iceberg_state(table, step_name):
+    """Analyzes and prints the current state of the Iceberg table's file structure and metadata.
     """
-    Analyzes and prints the current state of the Iceberg table's file structure and metadata.
-    """
-    paginated_print(f"\n\033[1m{'~'*80}\033[0m", reset=True)
-    paginated_print(f"\033[1m🔬 Analyzing Iceberg State after: {step_name}\033[0m")
-    paginated_print(f"\033[1m{'~'*80}\033[0m")
+    output_lines = [] # Accumulate output here
+
+    output_lines.append(f"\n\033[1m{'~'*80}\033[0m")
+    output_lines.append(f"\033[1m🔬 Analyzing Iceberg State after: {step_name}\033[0m")
+    output_lines.append(f"\033[1m{'~'*80}\033[0m")
 
     warehouse_path = "local_warehouse"
     
-    paginated_print("\n\033[1m📁 Current File Structure:\033[0m")
+    output_lines.append("\n\033[1m📁 Current File Structure:\033[0m")
     for root, _, files in os.walk(warehouse_path):
         level = root.replace(warehouse_path, '').count(os.sep)
         indent = ' ' * 2 * level
-        paginated_print(f"{indent}{os.path.basename(root)}/")
+        output_lines.append(f"{indent}{os.path.basename(root)}/")
         sub_indent = ' ' * 2 * (level + 1)
         for f in sorted(files):
-            paginated_print(f"{sub_indent}{f}")
+            output_lines.append(f"{sub_indent}{f}")
 
     if not table.metadata_location:
-        paginated_print("\n" + "\033[1m📝 Table is empty. No metadata file yet.\033[0m")
+        output_lines.append("\n" + "\033[1m📝 Table is empty. No metadata file yet.\033[0m")
+        paginated_print("\n".join(output_lines), reset=True) # Print accumulated output before returning
         return
 
     metadata_location = table.metadata_location.replace('file://', '')
     
     metadata_link = _link("https://iceberg.apache.org/spec/#table-metadata", "Latest Metadata File")
-    paginated_print(f"\n\033[1m📄 1. {metadata_link}:\033[0m {os.path.basename(metadata_location)})")
+    output_lines.append(f"\n\033[1m📄 1. {metadata_link}: {os.path.basename(metadata_location)})")
     with open(metadata_location, 'r') as f:
         metadata = json.load(f)
     
     current_snapshot_id = metadata.get('current-snapshot-id')
     if not current_snapshot_id:
-        paginated_print("   - No current snapshot found. The table is empty.")
+        output_lines.append("   - No current snapshot found. The table is empty.")
+        paginated_print("\n".join(output_lines), reset=True) # Print accumulated output before returning
         return
 
-    paginated_print(f"   - Points to current snapshot ID: \033[1m{current_snapshot_id}\033[0m")
+    output_lines.append(f"   - Points to current snapshot ID: \033[1m{current_snapshot_id}\033[0m")
     
-
     current_snapshot = next((s for s in metadata['snapshots'] if s['snapshot-id'] == current_snapshot_id), None)
     if not current_snapshot:
-        paginated_print("   - Could not find current snapshot in metadata.")
+        output_lines.append("   - Could not find current snapshot in metadata.")
+        paginated_print("\n".join(output_lines), reset=True) # Print accumulated output before returning
         return
-
-    paginated_print(f"   - Manifest List for this snapshot: \033[1m{os.path.basename(current_snapshot['manifest-list'])}\033[0m")
 
     manifest_list_path = current_snapshot['manifest-list'].replace('file://', '')
     manifest_list_link = _link("https://iceberg.apache.org/spec/#manifest-lists", "Manifest List")
-    paginated_print(f"\n📜 2. {manifest_list_link}: {os.path.basename(manifest_list_path)})")
-    paginated_print(f"   - This file lists all the 'manifest files' for snapshot \033[1m{current_snapshot_id}\033[0m.")
+    output_lines.append(f"\n📜 2. {manifest_list_link}: {os.path.basename(manifest_list_path)})")
+    output_lines.append(f"   - This file lists all the 'manifest files' for snapshot \033[1m{current_snapshot_id}\033[0m.")
     
     manifest_files_info = []
     with open(manifest_list_path, 'rb') as f:
         reader = fastavro.reader(f)
         for manifest_file in reader:
             manifest_files_info.append(manifest_file)
-            paginated_print(f"   - Contains manifest file: \033[1m{os.path.basename(manifest_file['manifest_path'])}\033[0m")
-            paginated_print(f"     - Records: \033[92m{manifest_file['added_rows_count']} added\033[0m, \033[91m{manifest_file['deleted_rows_count']} deleted\033[0m")
-            paginated_print(f"     - Manifest Path (full): {manifest_file['manifest_path']}")
+            output_lines.append(f"   - Contains manifest file: \033[1m{os.path.basename(manifest_file['manifest_path'])}\033[0m")
+            output_lines.append(f"     - Records: \033[92m{manifest_file['added_rows_count']} added\033[0m, \033[91m{manifest_file['deleted_rows_count']} deleted\033[0m")
+            output_lines.append(f"     - Manifest Path (full): {manifest_file['manifest_path']}")
 
     manifest_files_link = _link("https://iceberg.apache.org/spec/#manifests", "Manifest Files")
-    paginated_print(f"\n\033[1m🧾 3. {manifest_files_link}:\033[0m")
-    paginated_print("   - These files track individual data files (.parquet) and their status.")
+    output_lines.append(f"\n\033[1m🧾 3. {manifest_files_link}:\033[0m")
+    output_lines.append("   - These files track individual data files (.parquet) and their status.")
     for info in manifest_files_info:
         manifest_path = info['manifest_path'].replace('file://', '')
-        paginated_print(f"\n   Analyzing: \033[1m{os.path.basename(manifest_path)}\033[0m")
+        output_lines.append(f"\n   Analyzing: \033[1m{os.path.basename(manifest_path)}\033[0m")
         with open(manifest_path, 'rb') as f:
             reader = fastavro.reader(f)
             for record in reader:
                 status = record.get('status')
                 status_map = {0: "\033[94mEXISTING\033[0m", 1: "\033[92mADDED\033[0m", 2: "\033[91mDELETED\033[0m"}
                 file_path = record['data_file']['file_path'].replace('file://', '')
-                paginated_print(f"     - Data File: \033[1m{os.path.basename(file_path)}\033[0m")
-                paginated_print(f"       - Status: {status_map.get(status, 'UNKNOWN')}")
-                paginated_print(f"       - Record Count: \033[1m{record['data_file']['record_count']}\033[0m")
-                paginated_print(f"       - Data File Path (full): {record['data_file']['file_path']}")
+                output_lines.append(f"     - Data File: \033[1m{os.path.basename(file_path)}\033[0m")
+                output_lines.append(f"       - Status: {status_map.get(status, 'UNKNOWN')}")
+                output_lines.append(f"       - Record Count: \033[1m{record['data_file']['record_count']}\033[0m")
+                output_lines.append(f"       - Data File Path (full): {record['data_file']['file_path']}")
 
-    paginated_print("\n\033[1m🔗 How it's all connected:\033[0m")
-    paginated_print("   These files are the building blocks of your Iceberg table. They work together to provide a consistent and reliable view of your data, even as it changes.")
-    paginated_print("   1. The `metadata.json` file is the entry point. It points to the current snapshot.")
-    paginated_print("   2. The snapshot points to a `manifest-list.avro` file.")
-    paginated_print("   3. The `manifest-list.avro` file lists one or more `manifest-file.avro` files.")
-    paginated_print("   4. Each `manifest-file.avro` tracks the state of individual data files (`.parquet`).")
-    paginated_print("   5. Iceberg uses a 'merge-on-read' approach: when you query the table, it combines information from all relevant manifest files (including additions and deletions) to present the correct, up-to-date view of the data without rewriting entire data files for every change. This ensures efficient updates and time travel capabilities.")
-    paginated_print("   This chain allows Iceberg to provide atomic snapshots (ACID) of the entire table.")
+    output_lines.append("\n\033[1m🔗 How it's all connected:\033[0m")
+    output_lines.append("   These files are the building blocks of your Iceberg table. They work together to provide a consistent and reliable view of your data, even as it changes.")
+    output_lines.append("   1. The `metadata.json` file is the entry point. It points to the current snapshot.")
+    output_lines.append("   2. The snapshot points to a `manifest-list.avro` file.")
+    output_lines.append("   3. The `manifest-list.avro` file lists one or more `manifest-file.avro` files.")
+    output_lines.append("   4. Each `manifest-file.avro` tracks the state of individual data files (`.parquet`).")
+    output_lines.append("   5. Iceberg uses a 'merge-on-read' approach: when you query the table, it combines information from all relevant manifest files (including additions and deletions) to present the correct, up-to-date view of the data without rewriting entire data files for every change. This ensures efficient updates and time travel capabilities.")
+    output_lines.append("   This chain allows Iceberg to provide atomic snapshots (ACID) of the entire table.")
+
+    paginated_print("\n".join(output_lines), reset=True)
 
 def demonstrate_time_travel(table, snapshot_ids):
     """Demonstrate time travel capabilities"""
-    
     interactive_prompt(
         6, # Updated step number
         "TIME TRAVEL DEMONSTRATION",
@@ -367,12 +433,15 @@ def main():
         print("\n" + "\033[1m{'='*80}\033[0m")
         print("\033[1m🎉 DEMONSTRATION COMPLETE!\033[0m")
         print("\033[1m{'='*80}\033[0m")
-        print("\033[92m✅ You've seen Iceberg's ACID operations in action\033[0m")
+        print("\033[92m✅ You've seen Iceberg's ACID operations in action")
         print("\033[92m✅ Explored the internal file structure and metadata linkage\033[0m") 
         print("\033[92m✅ Demonstrated time travel capabilities\033[0m")
         print("\n\033[1m💡 Key takeaway: Iceberg provides ACID guarantees while maintaining\033[0m")
         print("   \033[1mcomplete data lineage and the ability to query any historical version!\033[0m")
         
+    except KeyboardInterrupt:
+        print("\nDemonstration interrupted by user.")
+        exit()
     except Exception as e:
         print(f"\n\033[91m❌ Error during demonstration: {e}\033[0m")
         import traceback
@@ -380,6 +449,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
