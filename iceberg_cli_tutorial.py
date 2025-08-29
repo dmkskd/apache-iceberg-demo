@@ -164,9 +164,51 @@ def perform_delete_operation(table):
     print(final_df)
     return snapshot_id_v3
 
+def perform_schema_evolution(table):
+    """Demonstrate schema evolution (V4)"""
+    interactive_prompt(
+        5, # Updated step number
+        "SCHEMA EVOLUTION (V4)",
+        "Iceberg allows safe schema evolution. We'll add a new 'email' column.",
+        "• Add 'email' column to the table schema\n• Insert new data with the 'email' column\n• Show that old data still works with the new schema"
+    )
+    print("📊 Current schema before evolution:")
+    print(table.schema())
+
+    # Add a new column
+    table.update_schema().add_column("email", StringType()).commit()
+    print("\n✅ Schema evolved: 'email' column added.")
+    print("📊 New schema:")
+    print(table.schema())
+
+    # Insert new data with the new column
+    data_v4 = {
+        "id": [7, 8],
+        "name": ["Grace", "Heidi"],
+        "email": ["grace@example.com", "heidi@example.com"],
+        "metadata": [
+            {"city": "Sydney", "dept": "HR"},
+            {"city": "Auckland", "dept": "Finance"}
+        ]
+    }
+    df_v4 = pd.DataFrame(data_v4)
+    print("\n📊 Data to insert with new 'email' column:")
+    print(df_v4)
+    pa_table_v4 = pa.Table.from_pandas(df_v4, schema=table.schema().as_arrow(), preserve_index=False)
+    table.append(pa_table_v4)
+    snapshot_id_v4 = table.current_snapshot().snapshot_id
+    print(f"\n✅ V4 Data inserted successfully with new schema!")
+    print(f"✅ Snapshot ID: {snapshot_id_v4}")
+    print(f"✅ Records: {len(table.scan().to_pandas())}")
+    final_df = table.scan().to_pandas()
+    print("\n📊 Final data after schema evolution:")
+    print(final_df)
+    return snapshot_id_v4
+
 def _link(url, text):
     """Create a clickable hyperlink for terminals that support it."""
     return f"\x1b]8;;{url}\x07{text}\x1b]8;\x07"
+
 
 def analyze_iceberg_state(table, step_name):
     """
@@ -257,10 +299,10 @@ def demonstrate_time_travel(table, snapshot_ids):
     """Demonstrate time travel capabilities"""
     
     interactive_prompt(
-        5, # Updated step number
+        6, # Updated step number
         "TIME TRAVEL DEMONSTRATION",
         "Iceberg's time travel lets us query historical versions of our data.",
-        "• Query V1: Original 4 users\n• Query V2: After upsert (6 users)\n• Query V3: After delete (3 users)\n• Show how each snapshot represents a point in time"
+        "• Query V1: Original 4 users\n• Query V2: After upsert (6 users)\n• Query V3: After delete (3 users)\n• Query V4: After schema evolution (5 users)\n• Show how each snapshot represents a point in time"
     )
     print("🕰️  Time Travel Through Snapshots:")
     for i, snapshot_id in enumerate(snapshot_ids, 1):
@@ -291,6 +333,9 @@ def main():
         snapshot_ids.append(perform_delete_operation(table))
         analyze_iceberg_state(table, "Delete Operation")
         
+        snapshot_ids.append(perform_schema_evolution(table))
+        analyze_iceberg_state(table, "Schema Evolution")
+
         demonstrate_time_travel(table, snapshot_ids)
         
         print("\n" + "\033[1m{'='*80}\033[0m")
