@@ -43,6 +43,9 @@ def interactive_prompt(step_number, title, description, about_to_do):
         exit()
     print()
 
+
+
+
 def cleanup_warehouse():
     """Clean up the warehouse directory"""
     warehouse_path = "local_warehouse"
@@ -52,6 +55,7 @@ def cleanup_warehouse():
 
 def setup_iceberg_environment():
     """Set up the Iceberg catalog and create initial table"""
+    
     interactive_prompt(
         1, 
         "ICEBERG ENVIRONMENT SETUP",
@@ -80,6 +84,7 @@ def setup_iceberg_environment():
 
 def insert_initial_data(table):
     """Insert initial data (V1)"""
+    
     interactive_prompt(
         2, 
         "INITIAL DATA INSERT (V1)",
@@ -109,6 +114,7 @@ def insert_initial_data(table):
 
 def perform_upsert_operation(table):
     """Perform upsert operation (V2)"""
+    
     interactive_prompt(
         3, 
         "UPSERT OPERATION (V2)",
@@ -138,6 +144,7 @@ def perform_upsert_operation(table):
 
 def perform_delete_operation(table):
     """Perform delete operation (V3)"""
+    
     interactive_prompt(
         4, 
         "DELETE OPERATION (V3)",
@@ -197,11 +204,14 @@ def analyze_iceberg_state(table, step_name):
         return
 
     print(f"   - Points to current snapshot ID: \033[1m{current_snapshot_id}\033[0m")
+    
 
     current_snapshot = next((s for s in metadata['snapshots'] if s['snapshot-id'] == current_snapshot_id), None)
     if not current_snapshot:
         print("   - Could not find current snapshot in metadata.")
         return
+
+    print(f"   - Manifest List for this snapshot: \033[1m{os.path.basename(current_snapshot['manifest-list'])}\033[0m")
 
     manifest_list_path = current_snapshot['manifest-list'].replace('file://', '')
     manifest_list_link = _link("https://iceberg.apache.org/spec/#manifest-lists", "Manifest List")
@@ -215,6 +225,7 @@ def analyze_iceberg_state(table, step_name):
             manifest_files_info.append(manifest_file)
             print(f"   - Contains manifest file: \033[1m{os.path.basename(manifest_file['manifest_path'])}\033[0m")
             print(f"     - Records: \033[92m{manifest_file['added_rows_count']} added\033[0m, \033[91m{manifest_file['deleted_rows_count']} deleted\033[0m")
+            print(f"     - Manifest Path (full): {manifest_file['manifest_path']}")
 
     manifest_files_link = _link("https://iceberg.apache.org/spec/#manifests", "Manifest Files")
     print(f"\n\033[1m🧾 3. {manifest_files_link}:\033[0m")
@@ -231,16 +242,20 @@ def analyze_iceberg_state(table, step_name):
                 print(f"     - Data File: \033[1m{os.path.basename(file_path)}\033[0m")
                 print(f"       - Status: {status_map.get(status, 'UNKNOWN')}")
                 print(f"       - Record Count: \033[1m{record['data_file']['record_count']}\033[0m")
+                print(f"       - Data File Path (full): {record['data_file']['file_path']}")
 
-    print("\n\033[1m🔗 How it's all connected:\033[0m")
+    print("\n\033[1m🔗 How it\'s all connected:\033[0m")
+    print("   These files are the building blocks of your Iceberg table. They work together to provide a consistent and reliable view of your data, even as it changes.")
     print("   1. The `metadata.json` file is the entry point. It points to the current snapshot.")
     print("   2. The snapshot points to a `manifest-list.avro` file.")
     print("   3. The `manifest-list.avro` file lists one or more `manifest-file.avro` files.")
     print("   4. Each `manifest-file.avro` tracks the state of individual data files (`.parquet`).")
+    print("   5. Iceberg uses a 'merge-on-read' approach: when you query the table, it combines information from all relevant manifest files (including additions and deletions) to present the correct, up-to-date view of the data without rewriting entire data files for every change. This ensures efficient updates and time travel capabilities.")
     print("   This chain allows Iceberg to provide atomic snapshots (ACID) of the entire table.")
 
 def demonstrate_time_travel(table, snapshot_ids):
     """Demonstrate time travel capabilities"""
+    
     interactive_prompt(
         5, # Updated step number
         "TIME TRAVEL DEMONSTRATION",
