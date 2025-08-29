@@ -37,7 +37,7 @@ def interactive_prompt(step_number, title, description, about_to_do):
     print(f"{about_to_do}")
     print(f"\n\033[1m{'-'*80}\033[0m")
     
-    user_input = input("\033[1m\033[92mPress ENTER to continue, or type 'q' to quit: \033[0m").strip().lower()
+    user_input = input("\033[1m\033[92mPress ENTER to execute step, or type 'q' to quit: \033[0m").strip().lower()
     if user_input == 'q':
         print("Exiting demonstration.")
         exit()
@@ -210,6 +210,27 @@ def perform_schema_evolution(table):
     print(final_df)
     return snapshot_id_v4
 
+_current_line_count = 0
+_max_lines_per_page = 25 # Adjust as needed
+
+def paginated_print(text, reset=False):
+    """Prints text and pauses if output exceeds screen height."""
+    global _current_line_count
+    if reset:
+        _current_line_count = 0
+
+    lines = text.splitlines()
+    for line in lines:
+        print(line)
+        _current_line_count += 1
+        if _current_line_count >= _max_lines_per_page:
+            user_input = input("\033[1m\033[92m--- Press ENTER to continue viewing output for this step (or 'q' to quit) ---\033[0m").strip().lower()
+            if user_input == 'q':
+                print("Exiting demonstration.")
+                exit()
+            _current_line_count = 0
+
+
 def _link(url, text):
     """Create a clickable hyperlink for terminals that support it."""
     return f"\x1b]8;;{url}\x07{text}\x1b]8;\x07"
@@ -219,86 +240,86 @@ def analyze_iceberg_state(table, step_name):
     """
     Analyzes and prints the current state of the Iceberg table's file structure and metadata.
     """
-    print(f"\n\033[1m{'~'*80}\033[0m")
-    print(f"\033[1m🔬 Analyzing Iceberg State after: {step_name}\033[0m")
-    print(f"\033[1m{'~'*80}\033[0m")
+    paginated_print(f"\n\033[1m{'~'*80}\033[0m", reset=True)
+    paginated_print(f"\033[1m🔬 Analyzing Iceberg State after: {step_name}\033[0m")
+    paginated_print(f"\033[1m{'~'*80}\033[0m")
 
     warehouse_path = "local_warehouse"
     
-    print("\n\033[1m📁 Current File Structure:\033[0m")
+    paginated_print("\n\033[1m📁 Current File Structure:\033[0m")
     for root, _, files in os.walk(warehouse_path):
         level = root.replace(warehouse_path, '').count(os.sep)
         indent = ' ' * 2 * level
-        print(f"{indent}{os.path.basename(root)}/")
+        paginated_print(f"{indent}{os.path.basename(root)}/")
         sub_indent = ' ' * 2 * (level + 1)
         for f in sorted(files):
-            print(f"{sub_indent}{f}")
+            paginated_print(f"{sub_indent}{f}")
 
     if not table.metadata_location:
-        print("\n" + "\033[1m📝 Table is empty. No metadata file yet.\033[0m")
+        paginated_print("\n" + "\033[1m📝 Table is empty. No metadata file yet.\033[0m")
         return
 
     metadata_location = table.metadata_location.replace('file://', '')
     
     metadata_link = _link("https://iceberg.apache.org/spec/#table-metadata", "Latest Metadata File")
-    print(f"\n\033[1m📄 1. {metadata_link}:\033[0m {os.path.basename(metadata_location)}")
+    paginated_print(f"\n\033[1m📄 1. {metadata_link}:\033[0m {os.path.basename(metadata_location)})")
     with open(metadata_location, 'r') as f:
         metadata = json.load(f)
     
     current_snapshot_id = metadata.get('current-snapshot-id')
     if not current_snapshot_id:
-        print("   - No current snapshot found. The table is empty.")
+        paginated_print("   - No current snapshot found. The table is empty.")
         return
 
-    print(f"   - Points to current snapshot ID: \033[1m{current_snapshot_id}\033[0m")
+    paginated_print(f"   - Points to current snapshot ID: \033[1m{current_snapshot_id}\033[0m")
     
 
     current_snapshot = next((s for s in metadata['snapshots'] if s['snapshot-id'] == current_snapshot_id), None)
     if not current_snapshot:
-        print("   - Could not find current snapshot in metadata.")
+        paginated_print("   - Could not find current snapshot in metadata.")
         return
 
-    print(f"   - Manifest List for this snapshot: \033[1m{os.path.basename(current_snapshot['manifest-list'])}\033[0m")
+    paginated_print(f"   - Manifest List for this snapshot: \033[1m{os.path.basename(current_snapshot['manifest-list'])}\033[0m")
 
     manifest_list_path = current_snapshot['manifest-list'].replace('file://', '')
     manifest_list_link = _link("https://iceberg.apache.org/spec/#manifest-lists", "Manifest List")
-    print(f"\n📜 2. {manifest_list_link}: {os.path.basename(manifest_list_path)}")
-    print(f"   - This file lists all the 'manifest files' for snapshot \033[1m{current_snapshot_id}\033[0m.")
+    paginated_print(f"\n📜 2. {manifest_list_link}: {os.path.basename(manifest_list_path)})")
+    paginated_print(f"   - This file lists all the 'manifest files' for snapshot \033[1m{current_snapshot_id}\033[0m.")
     
     manifest_files_info = []
     with open(manifest_list_path, 'rb') as f:
         reader = fastavro.reader(f)
         for manifest_file in reader:
             manifest_files_info.append(manifest_file)
-            print(f"   - Contains manifest file: \033[1m{os.path.basename(manifest_file['manifest_path'])}\033[0m")
-            print(f"     - Records: \033[92m{manifest_file['added_rows_count']} added\033[0m, \033[91m{manifest_file['deleted_rows_count']} deleted\033[0m")
-            print(f"     - Manifest Path (full): {manifest_file['manifest_path']}")
+            paginated_print(f"   - Contains manifest file: \033[1m{os.path.basename(manifest_file['manifest_path'])}\033[0m")
+            paginated_print(f"     - Records: \033[92m{manifest_file['added_rows_count']} added\033[0m, \033[91m{manifest_file['deleted_rows_count']} deleted\033[0m")
+            paginated_print(f"     - Manifest Path (full): {manifest_file['manifest_path']}")
 
     manifest_files_link = _link("https://iceberg.apache.org/spec/#manifests", "Manifest Files")
-    print(f"\n\033[1m🧾 3. {manifest_files_link}:\033[0m")
-    print("   - These files track individual data files (.parquet) and their status.")
+    paginated_print(f"\n\033[1m🧾 3. {manifest_files_link}:\033[0m")
+    paginated_print("   - These files track individual data files (.parquet) and their status.")
     for info in manifest_files_info:
         manifest_path = info['manifest_path'].replace('file://', '')
-        print(f"\n   Analyzing: \033[1m{os.path.basename(manifest_path)}\033[0m")
+        paginated_print(f"\n   Analyzing: \033[1m{os.path.basename(manifest_path)}\033[0m")
         with open(manifest_path, 'rb') as f:
             reader = fastavro.reader(f)
             for record in reader:
                 status = record.get('status')
                 status_map = {0: "\033[94mEXISTING\033[0m", 1: "\033[92mADDED\033[0m", 2: "\033[91mDELETED\033[0m"}
                 file_path = record['data_file']['file_path'].replace('file://', '')
-                print(f"     - Data File: \033[1m{os.path.basename(file_path)}\033[0m")
-                print(f"       - Status: {status_map.get(status, 'UNKNOWN')}")
-                print(f"       - Record Count: \033[1m{record['data_file']['record_count']}\033[0m")
-                print(f"       - Data File Path (full): {record['data_file']['file_path']}")
+                paginated_print(f"     - Data File: \033[1m{os.path.basename(file_path)}\033[0m")
+                paginated_print(f"       - Status: {status_map.get(status, 'UNKNOWN')}")
+                paginated_print(f"       - Record Count: \033[1m{record['data_file']['record_count']}\033[0m")
+                paginated_print(f"       - Data File Path (full): {record['data_file']['file_path']}")
 
-    print("\n\033[1m🔗 How it\'s all connected:\033[0m")
-    print("   These files are the building blocks of your Iceberg table. They work together to provide a consistent and reliable view of your data, even as it changes.")
-    print("   1. The `metadata.json` file is the entry point. It points to the current snapshot.")
-    print("   2. The snapshot points to a `manifest-list.avro` file.")
-    print("   3. The `manifest-list.avro` file lists one or more `manifest-file.avro` files.")
-    print("   4. Each `manifest-file.avro` tracks the state of individual data files (`.parquet`).")
-    print("   5. Iceberg uses a 'merge-on-read' approach: when you query the table, it combines information from all relevant manifest files (including additions and deletions) to present the correct, up-to-date view of the data without rewriting entire data files for every change. This ensures efficient updates and time travel capabilities.")
-    print("   This chain allows Iceberg to provide atomic snapshots (ACID) of the entire table.")
+    paginated_print("\n\033[1m🔗 How it's all connected:\033[0m")
+    paginated_print("   These files are the building blocks of your Iceberg table. They work together to provide a consistent and reliable view of your data, even as it changes.")
+    paginated_print("   1. The `metadata.json` file is the entry point. It points to the current snapshot.")
+    paginated_print("   2. The snapshot points to a `manifest-list.avro` file.")
+    paginated_print("   3. The `manifest-list.avro` file lists one or more `manifest-file.avro` files.")
+    paginated_print("   4. Each `manifest-file.avro` tracks the state of individual data files (`.parquet`).")
+    paginated_print("   5. Iceberg uses a 'merge-on-read' approach: when you query the table, it combines information from all relevant manifest files (including additions and deletions) to present the correct, up-to-date view of the data without rewriting entire data files for every change. This ensures efficient updates and time travel capabilities.")
+    paginated_print("   This chain allows Iceberg to provide atomic snapshots (ACID) of the entire table.")
 
 def demonstrate_time_travel(table, snapshot_ids):
     """Demonstrate time travel capabilities"""
