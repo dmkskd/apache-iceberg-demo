@@ -44,11 +44,11 @@ This script provides a step-by-step, interactive tutorial through the command li
 python iceberg_cli_tutorial.py
 ```
 
-### 2. TUI Demonstration (`iceberg_demo_interactive.py`) - Experimental
+### 2. TUI Demonstration (`iceberg_tui_tutorial.py`) - Experimental
 
 This script showcases Iceberg concepts using a Terminal User Interface (TUI) built with the Rich library.
 
-**Note:** This TUI demo is currently **experimental** and less stable than the CLI tutorial. While it demonstrates a more advanced UI, it may have some rendering or stability issues.
+**Note:** This TUI demo is currently **experimental** and less stable than the CLI tutorial. While it demonstrates a more advanced UI, it's not working as well as the CLI tutorial and may have some rendering or stability issues.
 
 **Features:**
 - Rich TUI with panels and layouts.
@@ -56,7 +56,7 @@ This script showcases Iceberg concepts using a Terminal User Interface (TUI) bui
 
 **To run the TUI demo:**
 ```bash
-python iceberg_demo_interactive.py
+python iceberg_tui_tutorial.py
 ```
 
 ## 🔍 What You'll Learn
@@ -137,7 +137,7 @@ The project includes comprehensive tests to ensure everything works correctly:
 python run_tests.py
 
 # Run specific test module
-python run_tests.py --module test_basic_demo
+python iceberg_cli_tutorial.py
 
 # List available test modules
 python run_tests.py --list
