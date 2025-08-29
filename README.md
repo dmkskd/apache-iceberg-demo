@@ -5,6 +5,7 @@ This project demonstrates Apache Iceberg's core features through two different d
 ## 📋 Prerequisites
 
 - Python 3.8+
+- [uv](https://docs.astral.sh/uv/) package manager
 
 ## 🚀 Quick Start
 
@@ -22,9 +23,9 @@ This project demonstrates Apache Iceberg's core features through two different d
 
 3.  **Install dependencies:**
     ```bash
-    pip install -e .
+    uv pip sync
     ```
-    This command reads the `pyproject.toml` file and installs the necessary packages in editable mode.
+    This command reads the `pyproject.toml` file and installs the necessary packages.
 
 ## 🎯 Demo Scripts
 
@@ -41,7 +42,7 @@ This script provides a step-by-step, interactive tutorial through the command li
 
 **To run the tutorial:**
 ```bash
-python iceberg_cli_tutorial.py
+uv run iceberg_cli_tutorial.py
 ```
 
 ### 2. TUI Demonstration (`iceberg_tui_tutorial.py`) - Experimental
@@ -56,7 +57,7 @@ This script showcases Iceberg concepts using a Terminal User Interface (TUI) bui
 
 **To run the TUI demo:**
 ```bash
-python iceberg_tui_tutorial.py
+uv run iceberg_tui_tutorial.py
 ```
 
 ## 🔍 What You'll Learn
@@ -134,13 +135,13 @@ The project includes comprehensive tests to ensure everything works correctly:
 
 ```bash
 # Run all tests
-python run_tests.py
+uv run run_tests.py
 
 # Run specific test module
-python iceberg_cli_tutorial.py
+uv run run_tests.py --module test_cli_tutorial
 
 # List available test modules
-python run_tests.py --list
+uv run run_tests.py --list
 
 # Or use unittest directly
 python -m unittest discover tests/ -v
@@ -151,8 +152,8 @@ python -m unittest discover tests/ -v
 ```text
 tests/
 ├── __init__.py                 # Test package initialization
-├── test_basic_demo.py         # Tests for iceberg_demo_basic.py
-├── test_interactive_demo.py   # Tests for iceberg_demo_interactive.py
+├── test_cli_tutorial.py         # Tests for iceberg_cli_tutorial.py
+├── test_tui_tutorial.py   # Tests for iceberg_tui_tutorial.py
 └── test_integration.py        # End-to-end integration tests
 ```
 
@@ -168,7 +169,7 @@ tests/
 After running the demos:
 
 1. Explore the generated files in `local_warehouse/`
-2. Run the tests to understand the codebase: `python run_tests.py`
+2. Run the tests to understand the codebase: `uv run run_tests.py`
 3. Try modifying the schema or data in the scripts
 4. Experiment with different Iceberg configurations
 5. Integrate with your own data sources
@@ -186,7 +187,7 @@ Feel free to enhance these demos or add new features! Both scripts are designed 
 ### Development Setup
 
 1. Clone the repository and install dependencies
-2. Run tests to ensure everything works: `python run_tests.py`
+2. Run tests to ensure everything works: `uv run run_tests.py`
 3. Make your changes
 4. Add tests for new functionality
 5. Ensure all tests pass before submitting

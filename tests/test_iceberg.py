@@ -172,7 +172,7 @@ class TestIcebergDemo(unittest.TestCase):
             snapshot2 = table.current_snapshot().snapshot_id
             
             # Test time travel
-            historical_df = table.scan().use_ref(str(snapshot1)).to_pandas()
+            historical_df = table.scan(snapshot_id=snapshot1).to_pandas()
             self.assertEqual(len(historical_df), 2)
             
             current_df = table.scan().to_pandas()

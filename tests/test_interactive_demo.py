@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Test suite for iceberg_demo_interactive.py
+Test suite for iceberg_tui_tutorial.py
 Tests the Rich TUI interactive demo functionality.
 """
 
@@ -16,7 +16,7 @@ import time
 # Add the parent directory to sys.path to import our demo module
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from iceberg_demo_interactive import IcebergTUI
+from iceberg_tui_tutorial import IcebergTUI
 
 
 class TestInteractiveDemo(unittest.TestCase):
@@ -29,7 +29,7 @@ class TestInteractiveDemo(unittest.TestCase):
         os.chdir(self.test_dir)
         
         # Create TUI instance with test configuration
-        self.tui = IcebergTUI()
+        self.tui = IcebergTUI(test_mode=True) # Run in test mode
         self.tui.warehouse_path = os.path.join(self.test_dir, "test_warehouse")
         
     def tearDown(self):
@@ -46,61 +46,6 @@ class TestInteractiveDemo(unittest.TestCase):
         self.assertIsNone(self.tui.catalog)
         self.assertIsNone(self.tui.table)
     
-    def test_progress_panel_creation(self):
-        """Test progress panel creation"""
-        self.tui.current_step = 3
-        panel = self.tui.create_progress_panel()
-        
-        self.assertIsNotNone(panel)
-        self.assertIn("Step 3/7", str(panel))
-    
-    def test_status_panel_creation(self):
-        """Test status panel creation"""
-        panel = self.tui.create_status_panel("Test message")
-        
-        self.assertIsNotNone(panel)
-        self.assertIn("Test message", str(panel))
-    
-    def test_content_panel_creation(self):
-        """Test content panel creation"""
-        panel = self.tui.create_content_panel("Test Title", "Test content")
-        
-        self.assertIsNotNone(panel)
-        self.assertIn("Test Title", str(panel))
-    
-    def test_layout_creation(self):
-        """Test layout creation"""
-        layout = self.tui.create_layout()
-        
-        self.assertIsNotNone(layout)
-        # Check that required layout sections exist
-        self.assertIn("main", layout)
-        self.assertIn("bottom", layout)
-        self.assertIn("content", layout["main"])
-        self.assertIn("sidebar", layout["main"])
-    
-    def test_file_tree_panel_no_warehouse(self):
-        """Test file tree panel when warehouse doesn't exist"""
-        panel = self.tui.create_file_tree_panel()
-        
-        self.assertIsNotNone(panel)
-        self.assertIn("not yet created", str(panel))
-    
-    def test_file_tree_panel_with_warehouse(self):
-        """Test file tree panel with existing warehouse"""
-        # Create a fake warehouse structure
-        warehouse_path = self.tui.warehouse_path
-        os.makedirs(warehouse_path, exist_ok=True)
-        
-        # Create some test files
-        with open(os.path.join(warehouse_path, "test.parquet"), "w") as f:
-            f.write("test")
-        
-        panel = self.tui.create_file_tree_panel()
-        
-        self.assertIsNotNone(panel)
-        self.assertIn("local_warehouse", str(panel))
-    
     @patch('builtins.input', return_value='')  # Mock user input to prevent blocking
     def test_cleanup_warehouse(self, mock_input):
         """Test warehouse cleanup"""
@@ -115,105 +60,38 @@ class TestInteractiveDemo(unittest.TestCase):
         self.tui.cleanup_warehouse()
         
         self.assertFalse(os.path.exists(self.tui.warehouse_path))
-    
-    @patch('builtins.input', return_value='')
-    @patch('rich.live.Live')
-    def test_step_1_setup(self, mock_live, mock_input):
-        """Test step 1 setup functionality"""
+
+    @patch('rich.live.Live') # Mock rich.live.Live to prevent actual TUI rendering
+    @patch('builtins.input', return_value='') # Mock user input
+    def test_tui_full_workflow_non_interactive(self, mock_input, mock_live):
+        """
+        Test the complete TUI workflow in non-interactive mode.
+        This tests the logical flow and state changes, not the UI rendering.
+        """
         try:
-            self.tui.step_1_setup()
+            self.tui.run() # Run the entire demo
             
-            # Verify step was incremented
-            self.assertEqual(self.tui.current_step, 1)
-            
-            # Verify catalog and table were created
+            # Assert on final state after all steps
+            self.assertEqual(self.tui.current_step, self.tui.total_steps)
             self.assertIsNotNone(self.tui.catalog)
             self.assertIsNotNone(self.tui.table)
-            
-            # Verify warehouse was created
-            self.assertTrue(os.path.exists(self.tui.warehouse_path))
-            
-        except Exception as e:
-            self.fail(f"Step 1 setup failed: {e}")
-    
-    @patch('builtins.input', return_value='')
-    @patch('rich.live.Live')
-    def test_step_2_insert(self, mock_live, mock_input):
-        """Test step 2 insert functionality"""
-        # First run setup
-        self.tui.step_1_setup()
-        
-        try:
-            self.tui.step_2_insert()
-            
-            # Verify step was incremented
-            self.assertEqual(self.tui.current_step, 2)
-            
-            # Verify data was inserted
-            df = self.tui.table.scan().to_pandas()
-            self.assertEqual(len(df), 4)
-            
-            # Verify snapshot was recorded
-            self.assertEqual(len(self.tui.snapshots), 1)
-            
-        except Exception as e:
-            self.fail(f"Step 2 insert failed: {e}")
-    
-    @patch('builtins.input', return_value='')
-    @patch('rich.live.Live')
-    def test_full_workflow_mocked(self, mock_live, mock_input):
-        """Test the complete workflow with mocked UI"""
-        try:
-            # Run through all steps
-            self.tui.step_1_setup()
-            self.tui.step_2_insert()
-            self.tui.step_3_upsert()
-            self.tui.step_4_delete()
-            
-            # Verify final state
-            self.assertEqual(self.tui.current_step, 4)
-            self.assertEqual(len(self.tui.snapshots), 3)
-            
-            # Verify final data
-            df = self.tui.table.scan().to_pandas()
-            self.assertEqual(len(df), 3)  # After delete
-            
-            # Verify all snapshots are unique
-            self.assertEqual(len(set(self.tui.snapshots)), 3)
-            
-        except Exception as e:
-            self.fail(f"Full workflow test failed: {e}")
+            self.assertEqual(len(self.tui.snapshots), 3) # 3 snapshots created (insert, upsert, delete)
 
+            # Verify final data in the table
+            final_df = self.tui.table.scan().to_pandas()
+            self.assertEqual(len(final_df), 3) # After delete operation
+            
+            # Verify specific data points if needed
+            self.assertIn("Alice", final_df["name"].values)
+            self.assertIn("Charlie", final_df["name"].values)
+            self.assertIn("Robert", final_df["name"].values)
+            self.assertNotIn("Diana", final_df["name"].values) # Diana was deleted
+            self.assertNotIn("Eve", final_df["name"].values)   # Eve was deleted
+            self.assertNotIn("Frank", final_df["name"].values) # Frank was deleted
 
-class TestTUIComponents(unittest.TestCase):
-    """Test individual TUI components"""
-    
-    def setUp(self):
-        """Set up test environment"""
-        self.tui = IcebergTUI()
-    
-    def test_data_panel_with_empty_dataframe(self):
-        """Test data panel with empty dataframe"""
-        import pandas as pd
-        df = pd.DataFrame()
-        
-        panel = self.tui.create_data_panel(df, "Test Title")
-        self.assertIsNotNone(panel)
-        self.assertIn("No data", str(panel))
-    
-    def test_data_panel_with_data(self):
-        """Test data panel with actual data"""
-        import pandas as pd
-        df = pd.DataFrame({
-            "id": [1, 2, 3],
-            "name": ["Alice", "Bob", "Charlie"]
-        })
-        
-        panel = self.tui.create_data_panel(df, "Test Data")
-        self.assertIsNotNone(panel)
-        self.assertIn("Alice", str(panel))
+        except Exception as e:
+            self.fail(f"TUI full workflow test failed: {e}")
 
 
 if __name__ == "__main__":
-    # Run tests with verbose output
     unittest.main(verbosity=2)

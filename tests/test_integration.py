@@ -29,64 +29,64 @@ class TestIntegration(unittest.TestCase):
         if os.path.exists(self.test_dir):
             shutil.rmtree(self.test_dir)
     
-    def test_basic_demo_runs_without_error(self):
-        """Test that the basic demo can be imported and key functions exist"""
+    def test_cli_tutorial_runs_without_error(self):
+        """Test that the CLI tutorial can be imported and key functions exist"""
         # Change to project directory
         os.chdir(self.project_root)
         
         try:
-            # Import the basic demo module
+            # Import the CLI tutorial module
             sys.path.insert(0, str(self.project_root))
-            import iceberg_demo_basic
+            import iceberg_cli_tutorial
             
             # Check that main functions exist
-            self.assertTrue(hasattr(iceberg_demo_basic, 'cleanup_warehouse'))
-            self.assertTrue(hasattr(iceberg_demo_basic, 'setup_iceberg_environment'))
-            self.assertTrue(hasattr(iceberg_demo_basic, 'insert_initial_data'))
-            self.assertTrue(hasattr(iceberg_demo_basic, 'perform_upsert_operation'))
-            self.assertTrue(hasattr(iceberg_demo_basic, 'perform_delete_operation'))
-            self.assertTrue(hasattr(iceberg_demo_basic, 'main'))
+            self.assertTrue(hasattr(iceberg_cli_tutorial, 'cleanup_warehouse'))
+            self.assertTrue(hasattr(iceberg_cli_tutorial, 'setup_iceberg_environment'))
+            self.assertTrue(hasattr(iceberg_cli_tutorial, 'insert_initial_data'))
+            self.assertTrue(hasattr(iceberg_cli_tutorial, 'perform_upsert_operation'))
+            self.assertTrue(hasattr(iceberg_cli_tutorial, 'perform_delete_operation'))
+            self.assertTrue(hasattr(iceberg_cli_tutorial, 'main'))
             
         except ImportError as e:
-            self.fail(f"Failed to import basic demo: {e}")
+            self.fail(f"Failed to import CLI tutorial: {e}")
         except Exception as e:
-            self.fail(f"Unexpected error testing basic demo: {e}")
+            self.fail(f"Unexpected error testing CLI tutorial: {e}")
     
-    def test_interactive_demo_runs_without_error(self):
-        """Test that the interactive demo can be imported and key classes exist"""
+    def test_tui_tutorial_runs_without_error(self):
+        """Test that the TUI tutorial can be imported and key classes exist"""
         # Change to project directory
         os.chdir(self.project_root)
         
         try:
-            # Import the interactive demo module
+            # Import the TUI tutorial module
             sys.path.insert(0, str(self.project_root))
-            import iceberg_demo_interactive
+            import iceberg_tui_tutorial
             
             # Check that main class exists
-            self.assertTrue(hasattr(iceberg_demo_interactive, 'IcebergTUI'))
-            self.assertTrue(hasattr(iceberg_demo_interactive, 'main'))
+            self.assertTrue(hasattr(iceberg_tui_tutorial, 'IcebergTUI'))
+            self.assertTrue(hasattr(iceberg_tui_tutorial, 'main'))
             
             # Create instance to test initialization
-            tui = iceberg_demo_interactive.IcebergTUI()
+            tui = iceberg_tui_tutorial.IcebergTUI()
             self.assertIsNotNone(tui)
             self.assertEqual(tui.current_step, 0)
             self.assertEqual(tui.total_steps, 7)
             
         except ImportError as e:
-            self.fail(f"Failed to import interactive demo: {e}")
+            self.fail(f"Failed to import TUI tutorial: {e}")
         except Exception as e:
-            self.fail(f"Unexpected error testing interactive demo: {e}")
+            self.fail(f"Unexpected error testing TUI tutorial: {e}")
     
     def test_project_structure(self):
         """Test that the project has the expected structure"""
         # Check main demo files
-        basic_demo = self.project_root / "iceberg_demo_basic.py"
-        interactive_demo = self.project_root / "iceberg_demo_interactive.py"
+        cli_tutorial = self.project_root / "iceberg_cli_tutorial.py"
+        tui_tutorial = self.project_root / "iceberg_tui_tutorial.py"
         readme = self.project_root / "README.md"
         pyproject = self.project_root / "pyproject.toml"
         
-        self.assertTrue(basic_demo.exists(), "Basic demo file missing")
-        self.assertTrue(interactive_demo.exists(), "Interactive demo file missing")
+        self.assertTrue(cli_tutorial.exists(), "CLI tutorial file missing")
+        self.assertTrue(tui_tutorial.exists(), "TUI tutorial file missing")
         self.assertTrue(readme.exists(), "README.md missing")
         self.assertTrue(pyproject.exists(), "pyproject.toml missing")
         
@@ -116,12 +116,12 @@ class TestIntegration(unittest.TestCase):
         # Change to test directory
         os.chdir(self.test_dir)
         
-        # Test basic demo warehouse functions
+        # Test CLI tutorial warehouse functions
         sys.path.insert(0, str(self.project_root))
-        import iceberg_demo_basic
+        import iceberg_cli_tutorial
         
         # Test cleanup when no warehouse exists
-        iceberg_demo_basic.cleanup_warehouse()
+        iceberg_cli_tutorial.cleanup_warehouse()
         self.assertFalse(os.path.exists("local_warehouse"))
         
         # Create a fake warehouse and test cleanup
@@ -130,7 +130,7 @@ class TestIntegration(unittest.TestCase):
             f.write("test")
         
         self.assertTrue(os.path.exists("local_warehouse"))
-        iceberg_demo_basic.cleanup_warehouse()
+        iceberg_cli_tutorial.cleanup_warehouse()
         self.assertFalse(os.path.exists("local_warehouse"))
 
 
@@ -145,23 +145,23 @@ class TestPerformance(unittest.TestCase):
         """Test that modules import in reasonable time"""
         import time
         
-        # Test basic demo import time
+        # Test CLI tutorial import time
         start_time = time.time()
         sys.path.insert(0, str(self.project_root))
-        import iceberg_demo_basic
-        basic_import_time = time.time() - start_time
+        import iceberg_cli_tutorial
+        cli_import_time = time.time() - start_time
         
-        # Test interactive demo import time
+        # Test TUI tutorial import time
         start_time = time.time()
-        import iceberg_demo_interactive
-        interactive_import_time = time.time() - start_time
+        import iceberg_tui_tutorial
+        tui_import_time = time.time() - start_time
         
         # Imports should be reasonably fast (less than 5 seconds each)
-        self.assertLess(basic_import_time, 5.0, "Basic demo import too slow")
-        self.assertLess(interactive_import_time, 5.0, "Interactive demo import too slow")
+        self.assertLess(cli_import_time, 5.0, "CLI tutorial import too slow")
+        self.assertLess(tui_import_time, 5.0, "TUI tutorial import too slow")
     
     def test_memory_usage_basic(self):
-        """Test that basic demo doesn't use excessive memory"""
+        """Test that CLI tutorial doesn't use excessive memory"""
         try:
             import psutil
             import os
@@ -170,19 +170,19 @@ class TestPerformance(unittest.TestCase):
             process = psutil.Process(os.getpid())
             initial_memory = process.memory_info().rss / 1024 / 1024  # MB
             
-            # Import and create basic demo components
+            # Import and create CLI tutorial components
             sys.path.insert(0, str(self.project_root))
-            import iceberg_demo_basic
+            import iceberg_cli_tutorial
             
             # Check memory increase
             final_memory = process.memory_info().rss / 1024 / 1024  # MB
             memory_increase = final_memory - initial_memory
             
             # Memory increase should be reasonable (less than 500MB)
-            self.assertLess(memory_increase, 500, "Excessive memory usage in basic demo")
+            self.assertLess(memory_increase, 500, "Excessive memory usage in CLI tutorial")
             
         except ImportError:
-            # psutil not available, skip memory test
+            # psutil not available, skip memory testing
             self.skipTest("psutil not available for memory testing")
 
 

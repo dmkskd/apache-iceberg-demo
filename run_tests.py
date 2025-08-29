@@ -90,7 +90,7 @@ def main():
     )
     parser.add_argument(
         "--module", "-m",
-        help="Run specific test module (e.g., test_basic_demo)",
+        help="Run specific test module (e.g., test_cli_tutorial)",
         default=None
     )
     parser.add_argument(

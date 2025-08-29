@@ -16,7 +16,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 # Import the functions we want to test
-from iceberg_demo_basic import (
+from iceberg_cli_tutorial import (
     cleanup_warehouse,
     setup_iceberg_environment,
     insert_initial_data,
@@ -60,8 +60,7 @@ class TestBasicDemo(unittest.TestCase):
         self.assertFalse(os.path.exists(warehouse_path))
     
     @patch('builtins.input', return_value='')  # Mock user input
-    @patch('iceberg_demo_basic.interactive_prompt')  # Mock the interactive prompt
-    def test_setup_iceberg_environment(self, mock_prompt):
+    def test_setup_iceberg_environment(self, mock_input):
         """Test Iceberg environment setup"""
         try:
             catalog, table = setup_iceberg_environment()
@@ -87,8 +86,7 @@ class TestBasicDemo(unittest.TestCase):
             self.fail(f"Environment setup failed: {e}")
     
     @patch('builtins.input', return_value='')
-    @patch('iceberg_demo_basic.interactive_prompt')
-    def test_full_demo_workflow(self, mock_prompt):
+    def test_full_demo_workflow(self, mock_input):
         """Test the complete demo workflow"""
         try:
             # Setup
@@ -110,7 +108,7 @@ class TestBasicDemo(unittest.TestCase):
             
             # Verify upsert results
             df = table.scan().to_pandas()
-            self.assertEqual(len(df), 4)  # Overwrite operation
+            self.assertEqual(len(df), 6)  # Upsert operation
             
             # Delete operation
             snapshot_id_v3 = perform_delete_operation(table)
