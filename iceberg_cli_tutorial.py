@@ -77,7 +77,12 @@ def setup_iceberg_environment():
         NestedField(3, "metadata", MapType(key_id=4, key_type=StringType(), value_id=5, value_type=StringType()), required=False)
     )
     catalog.create_namespace("test_db")
-    table = catalog.create_table("test_db.users", schema)
+    table = catalog.create_table(
+        "test_db.users",
+        schema,
+        properties={"write.format.default": "parquet"}
+    )
+    print(f"\033[92m✅ Table created with default write format: {table.properties.get('write.format.default')}\033[0m")
     print(f"\033[92m✅ Created table: test_db.users\033[0m")
     print(f"\033[92m✅ Schema: id (Long), name (String), metadata (Map<String,String>)\033[0m")
     return catalog, table
