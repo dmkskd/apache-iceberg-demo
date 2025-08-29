@@ -5,9 +5,9 @@ description = "A simple example for writing to an Apache Iceberg table."
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "duckdb>=1.3.2",
-    "pandas>=2.3.1",
-    "pyiceberg[pyarrow,sql-sqlite]>=0.9.1",
+    "duckdb==1.3.2",
+    "pandas==2.3.1",
+    "pyiceberg[pyarrow,sql-sqlite]==0.9.1",
     "pyarrow==18.0.0",
-    "fastavro" # Correctly list fastavro
+    "fastavro==1.12.0"
 ]

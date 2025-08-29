@@ -5,73 +5,59 @@ This project demonstrates Apache Iceberg's core features through two different d
 ## 📋 Prerequisites
 
 - Python 3.8+
-- [uv](https://docs.astral.sh/uv/) package manager (recommended) or pip
 
 ## 🚀 Quick Start
 
-1. **Clone and setup:**
+1.  **Clone the repository:**
+    ```bash
+    git clone <repo_url>
+    cd <repo_name>
+    ```
 
-   ```bash
-   git clone https://github.com/dmkskd/apache-iceberg-demo
-   cd apache-iceberg-demo
-   ```
+2.  **Create and activate a virtual environment:**
+    ```bash
+    python -m venv .venv
+    source .venv/bin/activate
+    ```
 
-2. **Install dependencies:**
-
-   ```bash
-   # Using uv (recommended)
-   uv install
-
-   # Or using pip
-   pip install -r requirements.txt
-   ```
+3.  **Install dependencies:**
+    ```bash
+    pip install -e .
+    ```
+    This command reads the `pyproject.toml` file and installs the necessary packages in editable mode.
 
 ## 🎯 Demo Scripts
 
-### 1. Basic Demo (`iceberg_demo_basic.py`)
+This project contains two scripts to demonstrate Apache Iceberg's features.
 
-A straightforward command-line demonstration that runs through all Iceberg operations sequentially.
+### 1. Interactive CLI Tutorial (`iceberg_cli_tutorial.py`) - Recommended
+
+This script provides a step-by-step, interactive tutorial through the command line. It's the most stable and comprehensive demo in this project.
 
 **Features:**
+- **Interactive & Educational:** Pauses at each step to explain the concepts and operations.
+- **Detailed Analysis:** After each operation (INSERT, UPSERT, DELETE), it provides a deep dive into the Iceberg internals, showing exactly which files were created and how they are linked.
+- **Clickable Links:** Includes links to the official Iceberg specification for different file types, allowing you to learn more about the concepts.
 
-- Simple terminal output
-- Sequential execution of all steps
-- Basic file structure inspection
-- Suitable for automated runs or CI/CD
-
-**Run it:**
-
+**To run the tutorial:**
 ```bash
-uv run iceberg_demo_basic.py
-# or
-python iceberg_demo_basic.py
+python iceberg_cli_tutorial.py
 ```
 
-### 2. Interactive Demo (`iceberg_demo_interactive.py`)
+### 2. TUI Demonstration (`iceberg_demo_interactive.py`) - Experimental
 
-An enhanced Rich TUI (Terminal User Interface) demonstration with step-by-step interaction.
+This script showcases Iceberg concepts using a Terminal User Interface (TUI) built with the Rich library.
+
+**Note:** This TUI demo is currently **experimental** and less stable than the CLI tutorial. While it demonstrates a more advanced UI, it may have some rendering or stability issues.
 
 **Features:**
+- Rich TUI with panels and layouts.
+- Visual progress tracking.
 
-- Beautiful Rich TUI with panels and progress tracking
-- Step-by-step user-controlled progression
-- Real-time file structure visualization
-- Interactive data inspection
-- Metadata deep-dive capabilities
-- Progress tracking with numbered steps
-
-**Run it:**
-
+**To run the TUI demo:**
 ```bash
-uv run iceberg_demo_interactive.py
-# or
 python iceberg_demo_interactive.py
 ```
-
-**Controls:**
-
-- Press `ENTER` to proceed to the next step
-- Type `q` + `ENTER` to quit at any time
 
 ## 🔍 What You'll Learn
 
@@ -130,15 +116,15 @@ local_warehouse/
 
 ## 🎨 Demo Comparison
 
-| Feature | Basic Demo | Interactive Demo |
-|---------|------------|------------------|
-| User Interaction | None (automated) | Step-by-step |
-| Visual Interface | Plain text | Rich TUI panels |
-| Progress Tracking | Text output | Visual progress bar |
-| File Inspection | Basic listing | Tree visualization |
-| Data Preview | Simple print | Formatted tables |
-| Learning Pace | Fast | User-controlled |
-| Best For | CI/CD, scripting | Learning, exploration |
+| Feature | Interactive CLI Tutorial | TUI Demonstration |
+|---------|--------------------------|-------------------|
+| User Interaction | Step-by-step             | Step-by-step      |
+| Visual Interface | Plain text               | Rich TUI panels   |
+| Progress Tracking | Text output              | Visual progress bar |
+| File Inspection | Detailed analysis        | Tree visualization |
+| Data Preview | Simple print             | Formatted tables  |
+| Learning Pace | User-controlled          | User-controlled   |
+| Best For | Learning, exploration    | Visual demo       |
 
 ## 🧪 Testing
 
