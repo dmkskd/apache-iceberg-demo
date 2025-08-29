@@ -129,7 +129,9 @@ local_warehouse/
 
 ## 🧪 Testing
 
-The project includes comprehensive tests to ensure everything works correctly:
+The project includes comprehensive tests to ensure everything works correctly.
+
+For detailed information about the test suite, including test structure, coverage, and individual test file purposes, please refer to the [`tests/README.md`](./tests/README.md) file.
 
 ### Running Tests
 
@@ -146,23 +148,6 @@ uv run run_tests.py --list
 # Or use unittest directly
 python -m unittest discover tests/ -v
 ```
-
-### Test Structure
-
-```text
-tests/
-├── __init__.py                 # Test package initialization
-├── test_cli_tutorial.py         # Tests for iceberg_cli_tutorial.py
-├── test_tui_tutorial.py   # Tests for iceberg_tui_tutorial.py
-└── test_integration.py        # End-to-end integration tests
-```
-
-### Test Coverage
-
-- **Unit Tests**: Test individual functions and components
-- **Integration Tests**: Test end-to-end workflows
-- **UI Tests**: Test Rich TUI components and layouts
-- **Error Handling**: Test error conditions and edge cases
 
 ## 🚀 Next Steps
 
