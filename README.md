@@ -23,7 +23,7 @@ This project demonstrates Apache Iceberg's core features through two different d
 
 3.  **Install dependencies:**
     ```bash
-    uv pip sync
+    uv pip sync pyproject.toml
     ```
     This command reads the `pyproject.toml` file and installs the necessary packages.
 
