@@ -111,7 +111,13 @@ local_warehouse/
 
 - **Storage**: Local file system (configurable)
 - **Format**: Parquet with Snappy compression
-- **Catalog**: SQLite-based catalog
+- **Catalog**: This project uses a **SQLite-based catalog** (`sqlite:///{warehouse_path}/catalog.db`) for simplicity and local demonstration. This means the table metadata (like table names, schemas, and pointers to the latest Iceberg metadata files) is stored in a local SQLite database file (`catalog.db`) within the `local_warehouse` directory.
+  - **How it's defined in code**: In `iceberg_cli_tutorial.py`, the catalog is initialized using `pyiceberg.catalog.load_catalog("default", uri=..., warehouse=...)`.
+  - **Other Catalog Options**: For production environments or larger deployments, Iceberg supports various other catalog types, including:
+    - **REST Catalog**: A centralized service that manages Iceberg metadata, offering scalability and language-agnostic access.
+    - **Hive Metastore**: Integrates with existing Hive Metastore services to manage Iceberg table metadata.
+    - **AWS Glue Data Catalog**: A serverless metadata repository for data lakes on AWS.
+    - **Nessie**: An open-source Git-like metastore for data lakes, providing branching, merging, and version control for tables.
 - **Schema**: Users table with id, name, metadata fields
 - **Operations**: Copy-on-Write (COW) strategy
 
