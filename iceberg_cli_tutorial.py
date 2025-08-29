@@ -271,10 +271,13 @@ def paginated_print(text, reset=False):
                 try:
                     key = _getch()
                 except KeyboardInterrupt:
-                    print("\nExiting demonstration.")
+                    print("\nDemonstration interrupted by user (KeyboardInterrupt).")
                     exit()
 
-                if key == 'q':
+                if key == '\x03': # Explicitly check for CTRL+C character
+                    print("\nExiting demonstration (CTRL+C detected).")
+                    exit()
+                elif key == 'q':
                     print("\nExiting demonstration.")
                     exit()
                 elif key == ' ':
