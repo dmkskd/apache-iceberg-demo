@@ -11,13 +11,13 @@ This project demonstrates Apache Iceberg's core features through two different d
 
 1.  **Clone the repository:**
     ```bash
-    git clone <repo_url>
-    cd <repo_name>
+    git clone https://github.com/dmkskd/apache-iceberg-demo
+    cd apache-iceberg-demo
     ```
 
 2.  **Create and activate a virtual environment:**
     ```bash
-    python -m venv .venv
+    uv venv
     source .venv/bin/activate
     ```
 
