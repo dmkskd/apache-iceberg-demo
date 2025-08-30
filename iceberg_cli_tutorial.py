@@ -21,7 +21,6 @@ import pyarrow as pa
 from pyiceberg.catalog import load_catalog
 from pyiceberg.schema import Schema
 from pyiceberg.types import NestedField, LongType, StringType, MapType
-from pyiceberg.io import load_file_io
 import fastavro
 from pyiceberg import expressions
 import json
@@ -69,9 +68,9 @@ def interactive_prompt(step_number, title, description, about_to_do):
     print(f"\n\033[1m{'='*80}\033[0m")
     print(f"\033[1mSTEP {step_number}: {title}\033[0m")
     print(f"\033[1m{'='*80}\033[0m")
-    print(f"\n\033[1mDESCRIPTION:\033[0m")
+    print("\n\033[1mDESCRIPTION:\033[0m")
     print(f"{description}")
-    print(f"\n\033[1mWHAT WE'RE ABOUT TO DO:\033[0m")
+    print("\n\033[1mWHAT WE'RE ABOUT TO DO:\033[0m")
     print(f"{about_to_do}")
     print(f"\n\033[1m{'-'*80}\033[0m")
     
@@ -119,8 +118,8 @@ def setup_iceberg_environment():
         properties={"write.format.default": "parquet"}
     )
     print(f"\033[92m✅ Table created with default write format: {table.properties.get('write.format.default')}\033[0m")
-    print(f"\033[92m✅ Created table: test_db.users\033[0m")
-    print(f"\033[92m✅ Schema: id (Long), name (String), metadata (Map<String,String>)\033[0m")
+    print("\033[92m✅ Created table: test_db.users\033[0m")
+    print("\033[92m✅ Schema: id (Long), name (String), metadata (Map<String,String>)\033[0m")
     return catalog, table
 
 def insert_initial_data(table):
@@ -147,9 +146,9 @@ def insert_initial_data(table):
     pa_table_v1 = pa.Table.from_pandas(df_v1, schema=table.schema().as_arrow(), preserve_index=False)
     table.append(pa_table_v1)
     snapshot_id_v1 = table.current_snapshot().snapshot_id
-    print(f"\n\033[92m✅ V1 Data inserted successfully!\033[0m")
+    print("\n\033[92m✅ V1 Data inserted successfully!\033[0m")
     print(f"\033[92m✅ Snapshot ID: {snapshot_id_v1}\033[0m")
-    print(f"\033[92m✅ Records: 4\033[0m")
+    print("\033[92m✅ Records: 4\033[0m")
     return snapshot_id_v1
 
 def perform_upsert_operation(table):
@@ -160,6 +159,11 @@ def perform_upsert_operation(table):
         "We'll update some existing records and add new ones. Iceberg handles this as an atomic operation.",
         "• Update Bob → Robert (promotion)\n• Update Diana's department\n• Add Eve and Frank\n• Result: 6 total users"
     )
+    
+    current_df = table.scan().to_pandas()
+    print("📊 Current data before upsert:")
+    print(current_df)
+
     data_v2 = {
         "id": [2, 4, 5, 6],
         "name": ["Robert", "Diana", "Eve", "Frank"],
@@ -171,14 +175,19 @@ def perform_upsert_operation(table):
         ]
     }
     df_v2 = pd.DataFrame(data_v2)
-    print("📊 Upsert data (updates + new records):")
+    print("\n📊 Upsert data (updates + new records):")
     print(df_v2)
     pa_table_v2 = pa.Table.from_pandas(df_v2, schema=table.schema().as_arrow(), preserve_index=False)
     table.upsert(pa_table_v2, join_cols=['id'])
     snapshot_id_v2 = table.current_snapshot().snapshot_id
-    print(f"\n\033[92m✅ V2 Upsert completed successfully!\033[0m")
+    
+    print("\n\033[92m✅ V2 Upsert completed successfully!\033[0m")
     print(f"\033[92m✅ Snapshot ID: {snapshot_id_v2}\033[0m")
-    print(f"\033[92m✅ Records: 6 (2 updated, 2 added, 2 unchanged)\033[0m")
+    
+    final_df = table.scan().to_pandas()
+    print("\n📊 Final data after upsert:")
+    print(final_df)
+    print(f"\n\033[92m✅ Records: {len(final_df)} (2 updated, 2 added, 2 unchanged)\033[0m")
     return snapshot_id_v2
 
 def perform_delete_operation(table):
@@ -194,9 +203,9 @@ def perform_delete_operation(table):
     print(current_df)
     table.delete(expressions.GreaterThan("id", 3))
     snapshot_id_v3 = table.current_snapshot().snapshot_id
-    print(f"\n\033[92m✅ V3 Delete completed successfully!\033[0m")
+    print("\n\033[92m✅ V3 Delete completed successfully!\033[0m")
     print(f"\033[92m✅ Snapshot ID: {snapshot_id_v3}\033[0m")
-    print(f"\033[92m✅ Records remaining: 3\033[0m")
+    print("\033[92m✅ Records remaining: 3\033[0m")
     final_df = table.scan().to_pandas()
     print("\n📊 Final data after delete:")
     print(final_df)
@@ -216,7 +225,7 @@ def perform_schema_evolution(table):
     # Add a new column
     table.update_schema().add_column("email", StringType()).commit()
     print("\n✅ Schema evolved: 'email' column added.")
-    print(f"📊 New schema:")
+    print("📊 New schema:")
     print(table.schema())
 
     # Insert new data with the new column
@@ -235,7 +244,7 @@ def perform_schema_evolution(table):
     pa_table_v4 = pa.Table.from_pandas(df_v4, schema=table.schema().as_arrow(), preserve_index=False)
     table.append(pa_table_v4)
     snapshot_id_v4 = table.current_snapshot().snapshot_id
-    print(f"\n✅ V4 Data inserted successfully!\033[0m")
+    print("\n✅ V4 Data inserted successfully!\033[0m")
     print(f"✅ Snapshot ID: {snapshot_id_v4}\033[0m")
     print(f"✅ Records: {len(table.scan().to_pandas())}")
     final_df = table.scan().to_pandas()
